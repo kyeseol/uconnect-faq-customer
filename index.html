@@ -153,12 +153,16 @@
             font-weight: 500;
         }
         .faq-answer-content {
-            padding: 0 20px 15px 20px; white-space: pre-wrap; font-size: 1rem;
+            padding: 15px 20px; font-size: 1rem;
             color: var(--text-secondary);
             border-top: 1px dashed var(--border-color);
             margin: 0 20px;
             line-height: 1.8;
         }
+        .faq-answer-content > div { margin: 8px 0; }
+        .faq-answer-content ul { margin: 8px 0; padding-left: 24px; }
+        .faq-answer-content li { margin: 6px 0; }
+        .faq-answer-content strong { color: var(--text-primary); }
         .faq-item.active .faq-answer { max-height: 3000px; }
         .faq-tags { padding: 0 20px 15px 20px; }
         .faq-tag {
@@ -218,7 +222,7 @@
             .faq-question { padding: 15px; }
             .question-text { font-size: 1rem; }
             .menu-path-box { margin: 15px 15px 12px 15px; padding: 10px 12px; font-size: 0.9rem; }
-            .faq-answer-content { padding: 0 15px 15px 15px; margin: 0 15px; font-size: 0.95rem; }
+            .faq-answer-content { padding: 12px 15px; margin: 0 15px; font-size: 0.95rem; }
             .faq-tags { padding: 0 15px 12px 15px; }
         }
         @media print {
@@ -253,7 +257,7 @@
         <div class="stats" id="stats"></div>
         <div class="faq-list" id="faqList"></div>
         <footer class="footer">
-            <div>Last Updated: 2025. 10. 31. 오전 12:02:53</div>
+            <div>Last Updated: 2025. 10. 31. 오전 12:26:01</div>
             <div style="margin-top: 10px; font-size: 0.85rem;">Powered by U+커넥트 | © LG U+ Corp.</div>
         </footer>
     </div>
@@ -273,6 +277,7 @@
             var currentFilters = { main: "all", mid: "all", sub: "all" };
             var currentSearchTerm = "";
             var debounceTimer;
+            
             function initialize() {
                 buildCategoryTreeData();
                 renderCategoryTree();
@@ -281,6 +286,7 @@
                 checkCategoryContentHeight();
                 loadFromURL();
             }
+            
             function buildCategoryTreeData() {
                 allFaqData.forEach(function(item) {
                     var mainCategory = item.mainCategory;
@@ -300,6 +306,7 @@
                     categoryTreeData[mainCategory].children[midCategory].children[subCategory].count++;
                 });
             }
+            
             function renderCategoryTree() {
                 var html = "";
                 var priorityOrder = [
@@ -365,6 +372,7 @@
                 }
                 categoryTree.innerHTML = html;
             }
+            
             function addEventListeners() {
                 masterHeader.addEventListener("click", function() {
                     masterHeader.classList.toggle("active");
@@ -425,6 +433,60 @@
                     }
                 });
             }
+            
+            function formatAnswer(text) {
+                var lines = text.split("\n");
+                var formatted = "";
+                var inList = false;
+                
+                for (var i = 0; i < lines.length; i++) {
+                    var line = lines[i].trim();
+                    if (!line) {
+                        if (inList) {
+                            formatted += "</ul>";
+                            inList = false;
+                        }
+                        formatted += "<br>";
+                        continue;
+                    }
+                    
+                    if (/^\d+\.\s/.test(line)) {
+                        if (inList) {
+                            formatted += "</ul>";
+                            inList = false;
+                        }
+                        formatted += "<div style=\"margin: 12px 0;\"><strong>" + line + "</strong></div>";
+                    }
+                    else if (/^[•·\-\*]\s/.test(line)) {
+                        if (!inList) {
+                            formatted += "<ul style=\"margin: 8px 0; padding-left: 24px;\">";
+                            inList = true;
+                        }
+                        formatted += "<li style=\"margin: 6px 0;\">" + line.replace(/^[•·\-\*]\s/, "") + "</li>";
+                    }
+                    else if (line.endsWith(":") && line.length < 50) {
+                        if (inList) {
+                            formatted += "</ul>";
+                            inList = false;
+                        }
+                        formatted += "<div style=\"margin: 16px 0 8px 0;\"><strong>" + line + "</strong></div>";
+                    }
+                    else {
+                        if (inList) {
+                            formatted += "</ul>";
+                            inList = false;
+                        }
+                        formatted += "<div style=\"margin: 8px 0;\">" + line + "</div>";
+                    }
+                }
+                
+                if (inList) {
+                    formatted += "</ul>";
+                }
+                
+                return formatted;
+            }
+            
             function renderFAQs() {
                 var filteredData = allFaqData;
                 var normalizedSearchTerm = "";
@@ -455,7 +517,8 @@
                 } else {
                     faqList.innerHTML = filteredData.map(function(item) {
                         var q = escapeHTML(item.question);
-                        var a = escapeHTML(item.answer);
+                        var rawAnswer = escapeHTML(item.answer);
+                        var a = formatAnswer(rawAnswer);
                         var menuPath = item.menuPath ? escapeHTML(item.menuPath) : "";
                         var keywords = item.keywords ? item.keywords.split(",").map(function(k) { return k.trim(); }).filter(function(k) { return k.length > 0; }) : [];
                         if (normalizedSearchTerm.length > 0 && currentSearchTerm.trim().length > 0) {
@@ -505,22 +568,26 @@
                     });
                 }
             }
+            
             function checkCategoryContentHeight() {
                 var contentInner = masterContent.querySelector(".master-content-inner");
                 if (contentInner && contentInner.scrollHeight > 400) {
                     toggleExpandBtn.style.display = "block";
                 }
             }
+            
             function resetCategoryFilters(updateUI) {
                 currentFilters = { main: "all", mid: "all", sub: "all" };
                 if (updateUI) {
                     updateCategoryUI();
                 }
             }
+            
             function resetSearch() {
                 searchInput.value = "";
                 currentSearchTerm = "";
             }
+            
             function updateCategoryUI(activeHeader) {
                 allCategoriesBtn.classList.remove("active");
                 categoryTree.querySelectorAll(".category-name.active").forEach(function(el) {
@@ -535,6 +602,7 @@
                     allCategoriesBtn.classList.add("active");
                 }
             }
+            
             function updateURL() {
                 if (!window.history || !window.history.pushState) return;
                 var params = new URLSearchParams();
@@ -547,6 +615,7 @@
                 var newURL = params.toString() ? "?" + params.toString() : window.location.pathname;
                 window.history.pushState({}, "", newURL);
             }
+            
             function loadFromURL() {
                 var params = new URLSearchParams(window.location.search);
                 var query = params.get("q");
@@ -557,14 +626,17 @@
                     updateCategoryUI();
                 }
             }
+            
             function escapeHTML(str) {
                 var div = document.createElement("div");
                 div.textContent = str;
                 return div.innerHTML;
             }
+            
             function escapeRegExp(string) {
                 return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
             }
+            
             initialize();
         });
     </script>
