@@ -257,7 +257,7 @@
         <div class="stats" id="stats"></div>
         <div class="faq-list" id="faqList"></div>
         <footer class="footer">
-            <div>Last Updated: 2025. 10. 31. 오전 12:29:30</div>
+            <div>Last Updated: 2025. 10. 31. 오전 12:49:17</div>
             <div style="margin-top: 10px; font-size: 0.85rem;">Powered by U+커넥트 | © LG U+ Corp.</div>
         </footer>
     </div>
@@ -438,46 +438,49 @@
                 var lines = text.split("\n");
                 var formatted = "";
                 var inList = false;
+                var bulletPattern = /^[•·\-\*]\s*/;
+                var numberPattern = /^\d+\.\s*/;
                 
                 for (var i = 0; i < lines.length; i++) {
                     var line = lines[i].trim();
-                    if (!line) {
+                    if (!line) continue;
+                    
+                    // 번호 매기기 (굵은 제목/질문)
+                    if (numberPattern.test(line)) {
                         if (inList) {
                             formatted += "</ul>";
                             inList = false;
                         }
-                        formatted += "<br>";
+                        formatted += "<div style=\"margin:18px 0 10px 0\"><strong>" + line + "</strong></div>";
                         continue;
                     }
                     
-                    if (/^\d+\.\s/.test(line)) {
-                        if (inList) {
-                            formatted += "</ul>";
-                            inList = false;
-                        }
-                        formatted += "<div style=\"margin: 12px 0;\"><strong>" + line + "</strong></div>";
-                    }
-                    else if (/^[•·\-\*]\s/.test(line)) {
+                    // 불릿 포인트
+                    if (bulletPattern.test(line)) {
                         if (!inList) {
-                            formatted += "<ul style=\"margin: 8px 0; padding-left: 24px;\">";
+                            formatted += "<ul style=\"margin:8px 0 8px 24px\">";
                             inList = true;
                         }
-                        formatted += "<li style=\"margin: 6px 0;\">" + line.replace(/^[•·\-\*]\s/, "") + "</li>";
+                        formatted += "<li style=\"margin:6px 0\">" + line.replace(bulletPattern, "") + "</li>";
+                        continue;
                     }
-                    else if (line.endsWith(":") && line.length < 50) {
+                    
+                    // 소제목(짧은 줄 + ":")
+                    if (line.endsWith(":") && line.length <= 30) {
                         if (inList) {
                             formatted += "</ul>";
                             inList = false;
                         }
-                        formatted += "<div style=\"margin: 16px 0 8px 0;\"><strong>" + line + "</strong></div>";
+                        formatted += "<div style=\"margin:10px 0\"><strong>" + line + "</strong></div>";
+                        continue;
                     }
-                    else {
-                        if (inList) {
-                            formatted += "</ul>";
-                            inList = false;
-                        }
-                        formatted += "<div style=\"margin: 8px 0;\">" + line + "</div>";
+                    
+                    // 일반 텍스트
+                    if (inList) {
+                        formatted += "</ul>";
+                        inList = false;
                     }
+                    formatted += "<div style=\"margin:8px 0\">" + line + "</div>";
                 }
                 
                 if (inList) {
